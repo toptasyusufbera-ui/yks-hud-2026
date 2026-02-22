@@ -3,97 +3,112 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YKS TACTICAL HUD 2026</title>
+<title>YKS COMBAT HUD 2026</title>
+
 <style>
 body {
-    background: black;
-    color: #00FF41;
-    font-family: "Courier New", monospace;
-    text-align: center;
+    margin:0;
+    background:black;
+    color:#00ff41;
+    font-family: Consolas, monospace;
+    overflow-x:hidden;
 }
-h1 { margin-top: 20px; }
+
+/* Arka plan grid */
+body::before {
+    content:"";
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:
+        linear-gradient(#00ff4122 1px, transparent 1px),
+        linear-gradient(90deg,#00ff4122 1px, transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;
+}
+
+/* HUD Glow */
+.hud {
+    text-align:center;
+    padding:20px;
+    text-shadow:0 0 5px #00ff41, 0 0 15px #00ff41;
+}
+
 .panel {
-    border: 1px solid #00FF41;
-    margin: 15px auto;
-    padding: 15px;
-    width: 90%;
-    max-width: 500px;
+    border:1px solid #00ff41;
+    margin:20px auto;
+    padding:20px;
+    max-width:500px;
+    background:rgba(0,255,65,0.05);
 }
-button {
-    background: black;
-    color: #00FF41;
-    border: 1px solid #00FF41;
-    padding: 8px 15px;
-    margin: 5px;
-    cursor: pointer;
+
+input, button {
+    background:black;
+    color:#00ff41;
+    border:1px solid #00ff41;
+    padding:8px;
+    margin:5px;
+    font-family:Consolas, monospace;
 }
-input {
-    background: black;
-    color: #00FF41;
-    border: 1px solid #00FF41;
-    padding: 5px;
-    width: 80px;
-    text-align: center;
+
+button:hover {
+    background:#00ff41;
+    color:black;
+    cursor:pointer;
 }
 </style>
 </head>
 <body>
 
-<h1>YKS TACTICAL HUD</h1>
-
-<div class="panel">
-    <h2>YKS 2026 Geri Sayım</h2>
-    <div id="countdown"></div>
+<div class="hud">
+    <h1>YKS COMBAT MODE</h1>
+    <h2 id="countdown"></h2>
 </div>
 
 <div class="panel">
-    <h2>Günlük Emir</h2>
+    <h3>GÜNLÜK EMİR</h3>
     <div id="dailyMessage"></div>
 </div>
 
 <div class="panel">
-    <h2>Çalışma Takibi</h2>
-    <input type="number" id="manualHours" placeholder="Saat">
-    <button onclick="addManual()">Ekle</button>
-    <br><br>
-    <div id="timer">00:00:00</div>
-    <button onclick="startTimer()">START</button>
-    <button onclick="stopTimer()">STOP</button>
-    <button onclick="saveTimer()">Bugüne Ekle</button>
+    <h3>BUGÜN KAÇ SAAT?</h3>
+    <input type="number" id="hoursInput" step="0.1" placeholder="Saat">
+    <button onclick="addHours()">KAYDET</button>
 </div>
 
 <div class="panel">
-    <h2>Haftalık Toplam</h2>
+    <h3>OPERASYON RAPORU</h3>
     <div id="weeklyTotal"></div>
+    <div id="totalAll"></div>
 </div>
 
 <script>
-/* --- YKS Geri Sayım --- */
+
+/* YKS 2026 */
 const yksDate = new Date("2026-06-20T09:00:00");
 
 function updateCountdown(){
     const now = new Date();
     const diff = yksDate - now;
 
-    const days = Math.floor(diff / (1000*60*60*24));
-    const hours = Math.floor((diff / (1000*60*60)) % 24);
-    const minutes = Math.floor((diff / (1000*60)) % 60);
+    const days = Math.floor(diff/(1000*60*60*24));
+    const hours = Math.floor((diff/(1000*60*60))%24);
 
     document.getElementById("countdown").innerText =
-        days + " Gün " + hours + " Saat " + minutes + " Dakika";
+        "T-MINUS " + days + " GÜN " + hours + " SAAT";
 }
-setInterval(updateCountdown, 1000);
+setInterval(updateCountdown,1000);
 updateCountdown();
 
-/* --- Günlük Motivasyon --- */
+/* Günlük Sert Mesaj */
 const messages = [
 "Konfor alanı düşman hattıdır.",
 "Bugün çalışmadığın saat, rakibinin avantajıdır.",
 "Geri sayım çalışıyor. Sen de çalış.",
-"Bahane üretmek kolay, başarı zor.",
 "Disiplin, motivasyon yokken devam etmektir.",
-"Bugün acı çek, yarın gurur duy.",
-"Ertelemek, yenilgiyi planlamaktır."
+"Acı geçer, sonuç kalır.",
+"Ertelemek, yenilgiyi planlamaktır.",
+"Bugün fedakarlık, yarın zafer."
 ];
 
 function getDailyMessage(){
@@ -103,62 +118,44 @@ function getDailyMessage(){
 }
 document.getElementById("dailyMessage").innerText = getDailyMessage();
 
-/* --- Çalışma Takibi --- */
-let timerInterval;
-let seconds = 0;
+/* Saat Takibi */
+function addHours(){
+    const val = parseFloat(document.getElementById("hoursInput").value);
+    if(!val) return;
 
-function startTimer(){
-    timerInterval = setInterval(()=>{
-        seconds++;
-        let h = String(Math.floor(seconds/3600)).padStart(2,'0');
-        let m = String(Math.floor((seconds%3600)/60)).padStart(2,'0');
-        let s = String(seconds%60).padStart(2,'0');
-        document.getElementById("timer").innerText = `${h}:${m}:${s}`;
-    },1000);
-}
-
-function stopTimer(){
-    clearInterval(timerInterval);
-}
-
-function saveTimer(){
-    let hours = seconds / 3600;
-    addHours(hours);
-    seconds = 0;
-    document.getElementById("timer").innerText = "00:00:00";
-}
-
-function addManual(){
-    let val = parseFloat(document.getElementById("manualHours").value);
-    if(val) addHours(val);
-}
-
-function addHours(hours){
     const today = new Date().toISOString().slice(0,10);
     let data = JSON.parse(localStorage.getItem("studyData")) || {};
-    data[today] = (data[today] || 0) + hours;
+
+    data[today] = (data[today] || 0) + val;
     localStorage.setItem("studyData", JSON.stringify(data));
-    updateWeekly();
+
+    document.getElementById("hoursInput").value="";
+    updateStats();
 }
 
-function updateWeekly(){
+function updateStats(){
     let data = JSON.parse(localStorage.getItem("studyData")) || {};
     let now = new Date();
     let weekTotal = 0;
+    let totalAll = 0;
 
     for(let date in data){
         let d = new Date(date);
         let diff = (now - d)/(1000*60*60*24);
-        if(diff <= 7){
-            weekTotal += data[date];
-        }
+
+        if(diff <= 7) weekTotal += data[date];
+        totalAll += data[date];
     }
 
     document.getElementById("weeklyTotal").innerText =
-        weekTotal.toFixed(2) + " Saat";
+        "Bu Hafta: " + weekTotal.toFixed(2) + " Saat";
+
+    document.getElementById("totalAll").innerText =
+        "Toplam Operasyon: " + totalAll.toFixed(2) + " Saat";
 }
 
-updateWeekly();
+updateStats();
+
 </script>
 
 </body>
