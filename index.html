@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YKS TACTICAL HUD 2026</title>
+<style>
+body {
+    background: black;
+    color: #00FF41;
+    font-family: "Courier New", monospace;
+    text-align: center;
+}
+h1 { margin-top: 20px; }
+.panel {
+    border: 1px solid #00FF41;
+    margin: 15px auto;
+    padding: 15px;
+    width: 90%;
+    max-width: 500px;
+}
+button {
+    background: black;
+    color: #00FF41;
+    border: 1px solid #00FF41;
+    padding: 8px 15px;
+    margin: 5px;
+    cursor: pointer;
+}
+input {
+    background: black;
+    color: #00FF41;
+    border: 1px solid #00FF41;
+    padding: 5px;
+    width: 80px;
+    text-align: center;
+}
+</style>
+</head>
+<body>
+
+<h1>YKS TACTICAL HUD</h1>
+
+<div class="panel">
+    <h2>YKS 2026 Geri Sayım</h2>
+    <div id="countdown"></div>
+</div>
+
+<div class="panel">
+    <h2>Günlük Emir</h2>
+    <div id="dailyMessage"></div>
+</div>
+
+<div class="panel">
+    <h2>Çalışma Takibi</h2>
+    <input type="number" id="manualHours" placeholder="Saat">
+    <button onclick="addManual()">Ekle</button>
+    <br><br>
+    <div id="timer">00:00:00</div>
+    <button onclick="startTimer()">START</button>
+    <button onclick="stopTimer()">STOP</button>
+    <button onclick="saveTimer()">Bugüne Ekle</button>
+</div>
+
+<div class="panel">
+    <h2>Haftalık Toplam</h2>
+    <div id="weeklyTotal"></div>
+</div>
+
+<script>
+/* --- YKS Geri Sayım --- */
+const yksDate = new Date("2026-06-20T09:00:00");
+
+function updateCountdown(){
+    const now = new Date();
+    const diff = yksDate - now;
+
+    const days = Math.floor(diff / (1000*60*60*24));
+    const hours = Math.floor((diff / (1000*60*60)) % 24);
+    const minutes = Math.floor((diff / (1000*60)) % 60);
+
+    document.getElementById("countdown").innerText =
+        days + " Gün " + hours + " Saat " + minutes + " Dakika";
+}
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+/* --- Günlük Motivasyon --- */
+const messages = [
+"Konfor alanı düşman hattıdır.",
+"Bugün çalışmadığın saat, rakibinin avantajıdır.",
+"Geri sayım çalışıyor. Sen de çalış.",
+"Bahane üretmek kolay, başarı zor.",
+"Disiplin, motivasyon yokken devam etmektir.",
+"Bugün acı çek, yarın gurur duy.",
+"Ertelemek, yenilgiyi planlamaktır."
+];
+
+function getDailyMessage(){
+    const today = new Date().toDateString();
+    let seed = today.split("").reduce((a,b)=>a+b.charCodeAt(0),0);
+    return messages[seed % messages.length];
+}
+document.getElementById("dailyMessage").innerText = getDailyMessage();
+
+/* --- Çalışma Takibi --- */
+let timerInterval;
+let seconds = 0;
+
+function startTimer(){
+    timerInterval = setInterval(()=>{
+        seconds++;
+        let h = String(Math.floor(seconds/3600)).padStart(2,'0');
+        let m = String(Math.floor((seconds%3600)/60)).padStart(2,'0');
+        let s = String(seconds%60).padStart(2,'0');
+        document.getElementById("timer").innerText = `${h}:${m}:${s}`;
+    },1000);
+}
+
+function stopTimer(){
+    clearInterval(timerInterval);
+}
+
+function saveTimer(){
+    let hours = seconds / 3600;
+    addHours(hours);
+    seconds = 0;
+    document.getElementById("timer").innerText = "00:00:00";
+}
+
+function addManual(){
+    let val = parseFloat(document.getElementById("manualHours").value);
+    if(val) addHours(val);
+}
+
+function addHours(hours){
+    const today = new Date().toISOString().slice(0,10);
+    let data = JSON.parse(localStorage.getItem("studyData")) || {};
+    data[today] = (data[today] || 0) + hours;
+    localStorage.setItem("studyData", JSON.stringify(data));
+    updateWeekly();
+}
+
+function updateWeekly(){
+    let data = JSON.parse(localStorage.getItem("studyData")) || {};
+    let now = new Date();
+    let weekTotal = 0;
+
+    for(let date in data){
+        let d = new Date(date);
+        let diff = (now - d)/(1000*60*60*24);
+        if(diff <= 7){
+            weekTotal += data[date];
+        }
+    }
+
+    document.getElementById("weeklyTotal").innerText =
+        weekTotal.toFixed(2) + " Saat";
+}
+
+updateWeekly();
+</script>
+
+</body>
+</html>
